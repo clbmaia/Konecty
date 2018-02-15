@@ -76,8 +76,6 @@ Konsistent.start = (MetaObject, Models, rebuildMetas = true) ->
 
 	Konsistent.MetaObject.find({type: 'namespace'}).observe
 		added: (meta) ->
-			console.log 'add meta ->', meta
-
 			global.Namespace = meta
 
 		changed: (meta) ->
