@@ -12,6 +12,7 @@ app.post('/rest/rocketchat/livechat', function(req, res/*, next*/) {
 	switch (hookData.type) {
 		case 'LivechatSession':
 		case 'LivechatEdit':
+		case 'LeadCapture':
 			var contactProcess = {
 				name: 'contact',
 				data: {
@@ -29,11 +30,14 @@ app.post('/rest/rocketchat/livechat', function(req, res/*, next*/) {
 				}
 
 				if (!_.isEmpty(hookData.visitor.email)) {
-					contactProcess.data.email = hookData.visitor.email;
+					// get the latest email
+					const visitorEmail = Array.isArray(hookData.visitor.email) ? hookData.visitor.email[hookData.visitor.email.length - 1].address : hookData.visitor.email;
+					contactProcess.data.email = visitorEmail;
 				}
 
 				if (!_.isEmpty(hookData.visitor.phone)) {
-					var phone = s.trim(hookData.visitor.phone).replace(/[^0-9]/g, '').replace(/^0+/g, '');
+					const visitorPhone = Array.isArray(hookData.visitor.phone) ? hookData.visitor.phone[hookData.visitor.phone.length - 1].phoneNumber : hookData.visitor.phone;
+					var phone = s.trim(visitorPhone).replace(/[^0-9]/g, '').replace(/^0+/g, '');
 
 					if (phone.length >= 10) {
 						contactProcess.data.phone = phone;
@@ -131,11 +135,10 @@ app.post('/rest/rocketchat/livechat', function(req, res/*, next*/) {
 				opportunityData.data.queue = Namespace.RocketChat.livechat.queue;
 			}
 
-			var messages = '';
-			if (hookData.messages) {
-				hookData.messages.forEach(function(msg) {
-					messages += '<strong>' + msg.username + '</strong> (' + moment(msg.ts).format('DD/MM/YYYY HH:mm:ss') + '): ' + msg.msg + '<br><br>\n\n';
-				});
+			if (hookData.messages && Array.isArray(hookData.messages) && hookData.messages.length > 0) {
+				const messages = hookData.messages.map(function(msg) {
+					return '<strong>' + msg.username + '</strong> (' + moment(msg.ts).format('DD/MM/YYYY HH:mm:ss') + '): ' + msg.msg;
+				}).join('<br><br>\n\n');
 
 				var messageData = {
 					name: 'message',
@@ -202,7 +205,7 @@ app.post('/rest/rocketchat/livechat', function(req, res/*, next*/) {
 				]
 			};
 
-			if (!contactProcess.data._id || _.isEmpty(contactProcess.data._id)) {
+			if (messageData) {
 				request.data.push(messageData);
 			}
 
@@ -333,7 +336,7 @@ app.get('/rest/rocketchat/livechat/queue', function(req, res/*, next*/) {
 	}
 
 	if (!departmentId && Namespace.RocketChat.livechat.queue) {
-		departmentId = Namespace.RocketChat.livechat.queue;
+		departmentId = Namespace.RocketChat.livechat.queue._id;
 	}
 
 	if (!departmentId) {
