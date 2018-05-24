@@ -29,6 +29,7 @@
 .emacs.desktop
 .emacs.desktop.lock
 .env
+.envrc
 .externalToolBuilders
 .idea
 .loadpath
